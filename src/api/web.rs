@@ -6,23 +6,20 @@ use std::{
 use reqwest::{
     header::HeaderValue,
     multipart,
-    Client, StatusCode
+    Client
 };
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+
+use super::Creator;
+use super::ImageData;
+use super::RobloxApiError;
 
 #[derive(Debug, Clone, Serialize)]
 enum TargetType {
     Audio,
     Decal,
     ModelFromFbx
-}
-
-#[derive(Debug, Clone, Serialize)]
-enum CreatorType {
-    User,
-    Group
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -35,15 +32,14 @@ pub struct CreationContext<'a> {
     targetType: TargetType,
     assetName: &'a str,
     assetDescription: &'a str,
-    assetId: u64,
+    assetId: Option<u64>,
     creator: Creator,
 }
 
-
-#[derive(Debug, Clone, Serialize)]
-pub struct Creator {
-    creatorType: CreatorType,
-    creatorId: u64
+impl From<ImageData<'_>> for AssetUploadData<'_> {
+    fn from(data: ImageData) -> Self {
+        AssetUploadData { creationContext: CreationContext { targetType: TargetType::Decal, assetName: data.name, assetDescription: data.description, assetId: None, creator: data.creator } }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -182,36 +178,4 @@ impl RobloxApiClient {
             })
         }
     }
-}
-
-#[derive(Debug, Error)]
-pub enum RobloxApiError {
-    #[error("Roblox API HTTP error")]
-    Http {
-        #[from]
-        source: reqwest::Error,
-    },
-
-    #[error("Roblox API HTTP error")]
-    Headers {
-        #[from]
-        source: reqwest::header::InvalidHeaderValue,
-    },
-
-    #[error("Roblox API error: {message}")]
-    ApiError { message: String },
-
-    #[error("Unable to convert request to JSON")]
-    BadRequestJson {
-        source: serde_json::Error,
-    },
-
-    #[error("Roblox API returned success, but had malformed JSON response: {body}")]
-    BadResponseJson {
-        body: String,
-        source: serde_json::Error,
-    },
-
-    #[error("Roblox API returned HTTP {status} with body: {body}")]
-    ResponseError { status: StatusCode, body: String },
 }

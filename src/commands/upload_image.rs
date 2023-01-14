@@ -6,17 +6,11 @@ use std::borrow::Cow;
 
 use crate::{
     alpha_bleed::alpha_bleed,
-    auth_cookie::get_auth_cookie,
+    api::{RobloxApiClient, ImageData, Creator},
     options::{GlobalOptions, UploadImageOptions},
-    roblox_cookie_api::{ImageUploadData, RobloxApiClient},
 };
 
 pub fn upload_image(global: GlobalOptions, options: UploadImageOptions) {
-    let auth = global
-        .auth
-        .or_else(get_auth_cookie)
-        .expect("no auth cookie found");
-
     let image_data = fs::read(options.path).expect("couldn't read input file");
 
     let mut img = image::load_from_memory(&image_data).expect("couldn't load image");
@@ -30,19 +24,21 @@ pub fn upload_image(global: GlobalOptions, options: UploadImageOptions) {
         .encode(&img.to_bytes(), width, height, img.color())
         .unwrap();
 
-    let mut client = RobloxApiClient::new(Some(auth));
+    let client = RobloxApiClient::from(global);
 
-    let upload_data = ImageUploadData {
-        image_data: Cow::Owned(encoded_image.to_vec()),
+    let upload_data = ImageData {
         name: &options.name,
         description: &options.description,
-        group_id: None,
+        creator: Creator {
+            creatorType: global.creatorType,
+            creatorId: global.creatorId,
+        }
     };
 
-    let response = client
-        .upload_image(upload_data)
+    let asset_id = client
+        .upload_asset(Cow::Owned(encoded_image.to_vec()), upload_data)
         .expect("Roblox API request failed");
 
     eprintln!("Image uploaded successfully!");
-    println!("{}", response.backing_asset_id);
+    println!("rbxassetid://{asset_id}");
 }

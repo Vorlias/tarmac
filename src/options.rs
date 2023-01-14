@@ -3,6 +3,8 @@ use std::{path::PathBuf, str::FromStr};
 use secrecy::SecretString;
 use structopt::StructOpt;
 
+use crate::api::CreatorType;
+
 #[derive(Debug, StructOpt)]
 #[structopt(about = env!("CARGO_PKG_DESCRIPTION"))]
 pub struct Options {
@@ -19,7 +21,22 @@ pub struct GlobalOptions {
     /// will attempt to use the cookie from the Roblox Studio installation on
     /// the system.
     #[structopt(long, global(true))]
-    pub auth: Option<SecretString>,
+    pub cookie: Option<SecretString>,
+
+    /// The authentication cookie for Tarmac to use. If not specified, Tarmac
+    /// will attempt to use the cookie from the Roblox Studio installation on
+    /// the system.
+    #[structopt(long, global(true))]
+    pub api_key: Option<SecretString>,
+
+    // we have a default value in here; although the CLI should not ever make this substitute in
+    /// creatorId is the userID or groupID to upload to if an Open Cloud API is specified
+    #[structopt(long, global(true), required_unless("cookie"), default_value("0"))]
+    pub creatorId: u64,
+
+    /// creatorId is the userID or groupID to upload to if an Open Cloud API is specified
+    #[structopt(long, global(true), required_unless("cookie"), default_value("user"))]
+    pub creatorType: CreatorType,
 
     /// Sets verbosity level. Can be specified multiple times.
     #[structopt(long = "verbose", short, global(true), parse(from_occurrences))]

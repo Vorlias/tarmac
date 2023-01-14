@@ -7,7 +7,7 @@ use reqwest::{
 };
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::roblox_cookie_api::RobloxApiError;
+use crate::api::RobloxApiError;
 
 pub fn get_auth_cookie() -> Option<SecretString> {
     rbx_cookie::get_value().map(SecretString::new)

@@ -11,8 +11,8 @@ use reqwest::StatusCode;
 use roblox_install::RobloxStudio;
 use thiserror::Error;
 
+use crate::api::{RobloxApiClient, RobloxApiError, ImageData, Creator};
 use crate::data::AssetId;
-use crate::roblox_cookie_api::{ImageUploadData, RobloxApiClient, RobloxApiError};
 
 pub trait SyncBackend {
     fn upload(&mut self, data: UploadInfo) -> Result<UploadResponse, Error>;
@@ -32,14 +32,14 @@ pub struct UploadInfo {
 
 pub struct RobloxSyncBackend<'a> {
     api_client: &'a mut RobloxApiClient,
-    upload_to_group_id: Option<u64>,
+    creator: Creator,
 }
 
 impl<'a> RobloxSyncBackend<'a> {
-    pub fn new(api_client: &'a mut RobloxApiClient, upload_to_group_id: Option<u64>) -> Self {
+    pub fn new(api_client: &'a mut RobloxApiClient, creator: Creator) -> Self {
         Self {
             api_client,
-            upload_to_group_id,
+            creator,
         }
     }
 }
@@ -48,25 +48,24 @@ impl<'a> SyncBackend for RobloxSyncBackend<'a> {
     fn upload(&mut self, data: UploadInfo) -> Result<UploadResponse, Error> {
         log::info!("Uploading {} to Roblox", &data.name);
 
-        let result = self
+        let response = self
             .api_client
-            .upload_image_with_moderation_retry(ImageUploadData {
-                image_data: Cow::Owned(data.contents),
+            .upload_asset_with_moderation_retry(Cow::Owned(data.contents), ImageData {
                 name: &data.name,
                 description: "Uploaded by Tarmac.",
-                group_id: self.upload_to_group_id,
+                creator: self.creator
             });
 
-        match result {
-            Ok(response) => {
+        match response {
+            Ok(asset_id) => {
                 log::info!(
                     "Uploaded {} to ID {}",
                     &data.name,
-                    response.backing_asset_id
+                    asset_id
                 );
 
                 Ok(UploadResponse {
-                    id: AssetId::Id(response.backing_asset_id),
+                    id: AssetId::Id(asset_id),
                 })
             }
 
