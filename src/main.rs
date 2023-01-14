@@ -8,6 +8,7 @@ mod dpi_scale;
 mod glob;
 mod lua_ast;
 mod options;
+mod roblox_cookie_api;
 mod roblox_web_api;
 mod sync_backend;
 

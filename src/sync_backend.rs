@@ -12,7 +12,7 @@ use roblox_install::RobloxStudio;
 use thiserror::Error;
 
 use crate::data::AssetId;
-use crate::roblox_web_api::{ImageUploadData, RobloxApiClient, RobloxApiError};
+use crate::roblox_cookie_api::{ImageUploadData, RobloxApiClient, RobloxApiError};
 
 pub trait SyncBackend {
     fn upload(&mut self, data: UploadInfo) -> Result<UploadResponse, Error>;

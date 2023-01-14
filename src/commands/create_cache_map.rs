@@ -7,7 +7,7 @@ use fs_err as fs;
 use crate::asset_name::AssetName;
 use crate::data::Manifest;
 use crate::options::{CreateCacheMapOptions, GlobalOptions};
-use crate::roblox_web_api::RobloxApiClient;
+use crate::roblox_cookie_api::RobloxApiClient;
 
 pub fn create_cache_map(
     global: GlobalOptions,

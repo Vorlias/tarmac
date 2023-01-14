@@ -22,7 +22,7 @@ use crate::{
     },
     dpi_scale,
     options::{GlobalOptions, SyncOptions, SyncTarget},
-    roblox_web_api::{RobloxApiClient, RobloxApiError},
+    roblox_cookie_api::{RobloxApiClient, RobloxApiError},
     sync_backend::{
         DebugSyncBackend, Error as SyncBackendError, LocalSyncBackend, NoneSyncBackend,
         RetryBackend, RobloxSyncBackend, SyncBackend, UploadInfo,

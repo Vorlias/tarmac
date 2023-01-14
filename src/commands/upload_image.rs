@@ -8,7 +8,7 @@ use crate::{
     alpha_bleed::alpha_bleed,
     auth_cookie::get_auth_cookie,
     options::{GlobalOptions, UploadImageOptions},
-    roblox_web_api::{ImageUploadData, RobloxApiClient},
+    roblox_cookie_api::{ImageUploadData, RobloxApiClient},
 };
 
 pub fn upload_image(global: GlobalOptions, options: UploadImageOptions) {
