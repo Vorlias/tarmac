@@ -53,7 +53,7 @@ pub struct UploadResponse {
 /// we've handled any errors.
 #[derive(Debug, Deserialize)]
 struct RawUploadResponse {
-    statusUrl: String
+    path: String
 }
 
 /// Internal representation of what the asset status endpoint returns, before
@@ -75,6 +75,8 @@ struct AssetInfo {
     assetId: u64,
     assetVersionNumber: u32
 }
+
+let API_BASE: &'static str = "https://apis.roblox.com/assets/v1/"
 
 pub struct RobloxApiClient {
     api_key: SecretString,
@@ -140,7 +142,7 @@ impl RobloxApiClient {
 
         let api_key = HeaderValue::from_str(self.api_key.expose_secret()).map_err(|source| RobloxApiError::Headers { source })?;
 
-        let mut response = self.client.post("https://apis.roblox.com/assets/v1/create").multipart(form).header("x-api-key", &api_key).send()?;
+        let mut response = self.client.post(concat!(API_BASE, "assets")).multipart(form).header("x-api-key", &api_key).send()?;
 
         let body = response.text()?;
 
@@ -153,7 +155,7 @@ impl RobloxApiClient {
             
            if let Ok(user_response) = user_response {
             // fetch status
-            let mut status_response = self.client.get(&user_response.statusUrl).header("x-api-key", &api_key).send()?;
+            let mut status_response = self.client.get(concat!(API_BASE, &user_response.path)).header("x-api-key", &api_key).send()?;
             let status = status_response.text()?;
 
             if status_response.status().is_success() {
