@@ -9,9 +9,9 @@ use reqwest::{
 };
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::auth_cookie::get_csrf_token;
+use super::{RobloxApiError, ImageData, CreatorType};
 
 #[derive(Debug, Clone)]
 pub struct ImageUploadData<'a> {
@@ -19,6 +19,18 @@ pub struct ImageUploadData<'a> {
     pub name: &'a str,
     pub description: &'a str,
     pub group_id: Option<u64>,
+}
+
+impl From<(Cow<'static, [u8]>, ImageData<'_>)> for ImageUploadData<'_> {
+    fn from((image, data): (Cow<[u8]>, ImageData)) -> Self {
+        let group_id = if matches!(data.creator.creatorType, CreatorType::Group) {
+            Some(data.creator.creatorId)
+        } else {
+            None
+        };
+
+        ImageUploadData { image_data: image, name: data.name, description: data.description, group_id }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,7 +52,7 @@ struct RawUploadResponse {
 }
 
 pub struct RobloxApiClient {
-    auth_token: Option<SecretString>,
+    auth_token: SecretString,
     csrf_token: Option<HeaderValue>,
     client: Client,
 }
@@ -52,28 +64,19 @@ impl fmt::Debug for RobloxApiClient {
 }
 
 impl RobloxApiClient {
-    pub fn new(auth_token: Option<SecretString>) -> Self {
-        match auth_token {
-            Some(token) => {
-                let csrf_token = match get_csrf_token(&token) {
-                    Ok(value) => Some(value),
-                    Err(err) => {
-                        log::error!("Was unable to fetch CSRF token: {}", err.to_string());
-                        None
-                    }
-                };
-
-                Self {
-                    auth_token: Some(token),
-                    csrf_token,
-                    client: Client::new(),
-                }
+    pub fn new(auth_token: SecretString) -> Self {
+        let csrf_token = match get_csrf_token(&auth_token) {
+            Ok(value) => Some(value),
+            Err(err) => {
+                log::error!("Was unable to fetch CSRF token: {}", err.to_string());
+                None
             }
-            _ => Self {
-                auth_token,
-                csrf_token: None,
-                client: Client::new(),
-            },
+        };
+
+        Self {
+            auth_token,
+            csrf_token,
+            client: Client::new(),
         }
     }
 
@@ -232,41 +235,15 @@ impl RobloxApiClient {
     /// Attach required headers to a request object before sending it to a
     /// Roblox API, like authentication and CSRF protection.
     fn attach_headers(&self, request: &mut Request) {
-        if let Some(auth_token) = &self.auth_token {
-            let cookie_value = format!(".ROBLOSECURITY={}", auth_token.expose_secret());
+        let cookie_value = format!(".ROBLOSECURITY={}", self.auth_token.expose_secret());
 
-            request.headers_mut().insert(
-                COOKIE,
-                HeaderValue::from_bytes(cookie_value.as_bytes()).unwrap(),
-            );
-        }
+        request.headers_mut().insert(
+            COOKIE,
+            HeaderValue::from_bytes(cookie_value.as_bytes()).unwrap(),
+        );
 
         if let Some(csrf) = &self.csrf_token {
             request.headers_mut().insert("X-CSRF-Token", csrf.clone());
         }
     }
-}
-
-#[derive(Debug, Error)]
-pub enum RobloxApiError {
-    #[error("Roblox API HTTP error")]
-    Http {
-        #[from]
-        source: reqwest::Error,
-    },
-
-    #[error("Roblox API error: {message}")]
-    ApiError { message: String },
-
-    #[error("Roblox API returned success, but had malformed JSON response: {body}")]
-    BadResponseJson {
-        body: String,
-        source: serde_json::Error,
-    },
-
-    #[error("Roblox API returned HTTP {status} with body: {body}")]
-    ResponseError { status: StatusCode, body: String },
-
-    #[error("Request for CSRF token did not return an X-CSRF-Token header.")]
-    MissingCsrfToken,
 }

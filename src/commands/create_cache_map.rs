@@ -4,16 +4,16 @@ use std::io::{BufWriter, Write};
 
 use fs_err as fs;
 
+use crate::api::RobloxApiClient;
 use crate::asset_name::AssetName;
 use crate::data::Manifest;
 use crate::options::{CreateCacheMapOptions, GlobalOptions};
-use crate::roblox_web_api::RobloxApiClient;
 
 pub fn create_cache_map(
     global: GlobalOptions,
     options: CreateCacheMapOptions,
 ) -> anyhow::Result<()> {
-    let mut api_client = RobloxApiClient::new(global.auth);
+    let api_client = RobloxApiClient::from(global);
 
     let project_path = match options.project_path {
         Some(path) => path,

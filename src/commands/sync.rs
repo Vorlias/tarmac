@@ -14,15 +14,14 @@ use walkdir::WalkDir;
 
 use crate::{
     alpha_bleed::alpha_bleed,
+    api::{RobloxApiClient, RobloxApiError, Creator},
     asset_name::AssetName,
-    auth_cookie::get_auth_cookie,
     codegen::perform_codegen,
     data::{
         AssetId, Config, ConfigError, ImageSlice, InputManifest, Manifest, ManifestError, SyncInput,
     },
     dpi_scale,
     options::{GlobalOptions, SyncOptions, SyncTarget},
-    roblox_web_api::{RobloxApiClient, RobloxApiError},
     sync_backend::{
         DebugSyncBackend, Error as SyncBackendError, LocalSyncBackend, NoneSyncBackend,
         RetryBackend, RobloxSyncBackend, SyncBackend, UploadInfo,
@@ -45,7 +44,7 @@ pub fn sync(global: GlobalOptions, options: SyncOptions) -> Result<(), SyncError
         None => env::current_dir()?,
     };
 
-    let mut api_client = RobloxApiClient::new(global.auth.or_else(get_auth_cookie));
+    let api_client = RobloxApiClient::from(global);
 
     let mut session = SyncSession::new(&fuzzy_config_path)?;
 
@@ -59,7 +58,10 @@ pub fn sync(global: GlobalOptions, options: SyncOptions) -> Result<(), SyncError
             sync_session(
                 &mut session,
                 &options,
-                RobloxSyncBackend::new(&mut api_client, group_id),
+                RobloxSyncBackend::new(&mut api_client, Creator {
+                    creatorType: global.creatorType,
+                    creatorId: global.creatorId,
+                }),
             );
         }
         SyncTarget::Local => {
