@@ -2,6 +2,7 @@
 # It is not intended for manual editing.
 version = 3
 
+
 [[package]]
 name = "addr2line"
 version = "0.17.0"
@@ -2084,6 +2085,7 @@ dependencies = [
  "fs-err",
  "globset",
  "image",
+ "indexmap",
  "lazy_static",
  "log",
  "packos",
